@@ -32,7 +32,7 @@ export default function OwnerHomeScreen() {
   useEffect(() => {
     if (isLoading) return;
     if (!restaurant) {
-      router.replace("/(owner)/create-restaurant");
+      router.replace("/(owner)/(index)/create-restaurant");
     }
   }, [restaurant, isLoading]);
 
@@ -64,7 +64,7 @@ export default function OwnerHomeScreen() {
 
       <Pressable
         style={styles.editButton}
-        onPress={() => router.push("/(owner)/edit-restaurant")}
+        onPress={() => router.push("/(owner)/(index)/edit-restaurant")}
       >
         <Text style={styles.editButtonText}>Edit Restaurant</Text>
       </Pressable>
