@@ -6,6 +6,9 @@ import { AuthController } from './auth/auth.controller';
 import { AuthModule } from './auth/auth.module';
 import { AuthService } from './auth/auth.service';
 import { DbModule } from './db/db.module';
+import { RestaurantsService } from './restaurants/restaurants.service';
+import { RestaurantsController } from './restaurants/restaurants.controller';
+import { RestaurantsModule } from './restaurants/restaurants.module';
 
 @Module({
   imports: [
@@ -14,8 +17,9 @@ import { DbModule } from './db/db.module';
     }),
     DbModule,
     AuthModule,
+    RestaurantsModule,
   ],
-  controllers: [AppController, AuthController],
-  providers: [AppService, AuthService],
+  controllers: [AppController, AuthController, RestaurantsController],
+  providers: [AppService, AuthService, RestaurantsService],
 })
 export class AppModule {}

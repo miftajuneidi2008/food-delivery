@@ -5,4 +5,5 @@ allowBuilds:
   '@parcel/watcher': false
   bcrypt: true
   esbuild: false
+  msgpackr-extract: true
   unrs-resolver: false

@@ -1,3 +1,4 @@
+import { JwtPayload } from '@food-delivery/types';
 import {
   CanActivate,
   ExecutionContext,
@@ -6,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { JwtPayload } from '@food-delivery/types';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {

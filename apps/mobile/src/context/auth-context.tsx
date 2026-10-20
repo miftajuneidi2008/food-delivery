@@ -1,7 +1,7 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { deleteToken, getToken, saveToken } from "@/lib/auth";
 import { api } from "@/lib/axios";
-import { saveToken, getToken, deleteToken } from "@/lib/auth";
 import { User } from "@food-delivery/types";
+import { createContext, useContext, useEffect, useState } from "react";
 
 interface AuthContextType {
   user: User | null;
