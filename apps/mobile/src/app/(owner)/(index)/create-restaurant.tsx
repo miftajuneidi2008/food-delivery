@@ -1,41 +1,63 @@
-import { openSettings } from 'expo-linking';
-import { useState } from 'react';
+import { api } from "@/lib/axios";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  Image,
-} from 'react-native';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
-import { api } from '@/lib/axios';
-import { useImageUploader } from '@/lib/uploadthing';
+} from "react-native";
 
 export default function CreateRestaurantScreen() {
   const queryClient = useQueryClient();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [address, setAddress] = useState('');
-  const [cuisineType, setCuisineType] = useState('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [address, setAddress] = useState("");
+  const [cuisineType, setCuisineType] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
-  const { openImagePicker, isUploading } = useImageUploader('restaurantImage', {
-    onClientUploadComplete: (res) => {
-      setImageUrl(res[0].ufsUrl);
-      Alert.alert('Image uploaded successfully');
-    },
-    onUploadError: (error) => {
-      Alert.alert('Upload failed', error.message);
-    },
-  });
+  const [isUploading, setIsUploading] = useState(false);
+
+  async function pickAndUploadImage() {
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+    });
+    if (picked.canceled) return;
+    const asset = picked.assets[0];
+
+    const form = new FormData();
+    form.append("file", {
+      uri: asset.uri,
+      name: asset.fileName ?? "upload.jpg",
+      type: asset.mimeType ?? "image/jpeg",
+    } as any);
+
+    try {
+      setIsUploading(true);
+      const res = await api.post<{ url: string }>(
+        "/restaurants/upload-image",
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      setImageUrl(res.data.url);
+      Alert.alert("Image uploaded successfully");
+    } catch (e: any) {
+      Alert.alert("Upload failed", e?.response?.data?.message ?? e.message);
+    } finally {
+      setIsUploading(false);
+    }
+  }
 
   const { mutate: createRestaurant, isPending } = useMutation({
     mutationFn: () =>
-      api.post('/restaurants', {
+      api.post("/restaurants", {
         name,
         description,
         address,
@@ -43,20 +65,20 @@ export default function CreateRestaurantScreen() {
         imageUrl,
       }),
     onSuccess: (restaurant) => {
-      void queryClient.setQueryData(['my-restaurant'], restaurant);
-      router.replace('/(owner)/(index)');
+      void queryClient.setQueryData(["my-restaurant"], restaurant);
+      router.replace("/(owner)/(index)");
     },
     onError: (e: any) => {
       Alert.alert(
-        'Error',
-        e?.response?.data?.message ?? 'Something went wrong',
+        "Error",
+        e?.response?.data?.message ?? "Something went wrong",
       );
     },
   });
 
   function handleSubmit() {
     if (!name || !address || !cuisineType) {
-      return Alert.alert('Please fill in all required fields');
+      return Alert.alert("Please fill in all required fields");
     }
     createRestaurant();
   }
@@ -67,28 +89,14 @@ export default function CreateRestaurantScreen() {
 
       <Pressable
         style={styles.imagePicker}
-        onPress={() =>
-          void openImagePicker({
-            source: 'library',
-            onInsufficientPermissions: () => {
-              Alert.alert(
-                'No permissions',
-                'You need to grant permission to your phone',
-                [
-                  { text: 'Dismiss' },
-                  { text: 'Open Settings', onPress: void openSettings },
-                ],
-              );
-            },
-          })
-        }
+        onPress={() => void pickAndUploadImage()}
         disabled={isUploading}
       >
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={styles.image} />
         ) : (
           <Text style={styles.imagePickerText}>
-            {isUploading ? 'Uploading...' : 'Tap to upload restaurant image'}
+            {isUploading ? "Uploading..." : "Tap to upload restaurant image"}
           </Text>
         )}
       </Pressable>
@@ -138,35 +146,35 @@ export default function CreateRestaurantScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 24, backgroundColor: '#fff' },
-  title: { fontSize: 28, fontWeight: '700', marginBottom: 24 },
+  container: { flexGrow: 1, padding: 24, backgroundColor: "#fff" },
+  title: { fontSize: 28, fontWeight: "700", marginBottom: 24 },
   imagePicker: {
     height: 180,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#ddd",
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
-  image: { width: '100%', height: '100%' },
-  imagePickerText: { color: '#999', fontSize: 14 },
+  image: { width: "100%", height: "100%" },
+  imagePickerText: { color: "#999", fontSize: 14 },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderRadius: 8,
     padding: 14,
     marginBottom: 16,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     borderRadius: 8,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 8,
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
 });

@@ -19,9 +19,12 @@ async function bootstrap() {
     '/api/uploadthing',
     createRouteHandler({
       router: uploadRouter,
-      config: { token: process.env.UPLOADTHING_TOKEN! },
+      config: {
+        token: process.env.UPLOADTHING_TOKEN!,
+      },
     }),
   );
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   console.log(`Server is running on http://localhost:${port}`);
