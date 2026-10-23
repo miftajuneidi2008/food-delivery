@@ -6,9 +6,12 @@ import { AuthController } from './auth/auth.controller';
 import { AuthModule } from './auth/auth.module';
 import { AuthService } from './auth/auth.service';
 import { DbModule } from './db/db.module';
-import { RestaurantsService } from './restaurants/restaurants.service';
+import { MenuController } from './menu/menu.controller';
+import { MenuModule } from './menu/menu.module';
+import { MenuService } from './menu/menu.service';
 import { RestaurantsController } from './restaurants/restaurants.controller';
 import { RestaurantsModule } from './restaurants/restaurants.module';
+import { RestaurantsService } from './restaurants/restaurants.service';
 
 @Module({
   imports: [
@@ -18,8 +21,14 @@ import { RestaurantsModule } from './restaurants/restaurants.module';
     DbModule,
     AuthModule,
     RestaurantsModule,
+    MenuModule,
   ],
-  controllers: [AppController, AuthController, RestaurantsController],
-  providers: [AppService, AuthService, RestaurantsService],
+  controllers: [
+    AppController,
+    AuthController,
+    RestaurantsController,
+    MenuController,
+  ],
+  providers: [AppService, AuthService, RestaurantsService, MenuService],
 })
 export class AppModule {}

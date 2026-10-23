@@ -21,7 +21,6 @@ export default function CreateRestaurantScreen() {
   const [address, setAddress] = useState("");
   const [cuisineType, setCuisineType] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-
   const [isUploading, setIsUploading] = useState(false);
 
   async function pickAndUploadImage() {
@@ -46,8 +45,10 @@ export default function CreateRestaurantScreen() {
         form,
         { headers: { "Content-Type": "multipart/form-data" } },
       );
-      setImageUrl(res.data.url);
-      Alert.alert("Image uploaded successfully");
+      console.log(res.data);
+      const url = res.data?.url;
+      if (!url) throw new Error("Server did not return an image URL");
+      setImageUrl(url);
     } catch (e: any) {
       Alert.alert("Upload failed", e?.response?.data?.message ?? e.message);
     } finally {
@@ -64,8 +65,8 @@ export default function CreateRestaurantScreen() {
         cuisineType,
         imageUrl,
       }),
-    onSuccess: (restaurant) => {
-      void queryClient.setQueryData(["my-restaurant"], restaurant);
+    onSuccess: (res) => {
+      queryClient.setQueryData(["my-restaurant"], res.data);
       router.replace("/(owner)/(index)");
     },
     onError: (e: any) => {
@@ -87,19 +88,33 @@ export default function CreateRestaurantScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Create your restaurant</Text>
 
-      <Pressable
-        style={styles.imagePicker}
-        onPress={() => void pickAndUploadImage()}
-        disabled={isUploading}
-      >
-        {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={styles.image} />
-        ) : (
+      {imageUrl ? (
+        <Pressable
+          onPress={() => void pickAndUploadImage()}
+          disabled={isUploading}
+        >
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.preview}
+            resizeMode="cover"
+            onLoad={() => console.log("image loaded")}
+            onError={(e) => console.log("image error:", e.nativeEvent)}
+          />
+          <Text style={styles.changeText}>
+            {isUploading ? "Uploading..." : "Tap image to change"}
+          </Text>
+        </Pressable>
+      ) : (
+        <Pressable
+          style={styles.imagePicker}
+          onPress={() => void pickAndUploadImage()}
+          disabled={isUploading}
+        >
           <Text style={styles.imagePickerText}>
             {isUploading ? "Uploading..." : "Tap to upload restaurant image"}
           </Text>
-        )}
-      </Pressable>
+        </Pressable>
+      )}
 
       <TextInput
         style={styles.input}
@@ -130,9 +145,7 @@ export default function CreateRestaurantScreen() {
 
       <Pressable
         style={styles.button}
-        onPress={() => {
-          handleSubmit();
-        }}
+        onPress={handleSubmit}
         disabled={isPending || isUploading}
       >
         {isPending ? (
@@ -157,9 +170,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
-    overflow: "hidden",
   },
-  image: { width: "100%", height: "100%" },
+  preview: {
+    width: "100%",
+    height: 180,
+    borderRadius: 12,
+    backgroundColor: "#f2f2f2",
+  },
+  changeText: {
+    color: "#999",
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: 6,
+    marginBottom: 16,
+  },
   imagePickerText: { color: "#999", fontSize: 14 },
   input: {
     borderWidth: 1,
