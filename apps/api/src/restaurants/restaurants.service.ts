@@ -62,8 +62,6 @@ export class RestaurantsService {
   }
 
   async findAll(search?: string) {
-    // if search is provided, filter by name OR cuisine type (case-insensitive)
-    // only return open restaurants to customers
     if (search) {
       return this.db
         .select()

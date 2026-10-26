@@ -12,6 +12,8 @@ import { MenuService } from './menu/menu.service';
 import { RestaurantsController } from './restaurants/restaurants.controller';
 import { RestaurantsModule } from './restaurants/restaurants.module';
 import { RestaurantsService } from './restaurants/restaurants.service';
+import { OrderService } from './orders/order.service';
+import { OrdersController } from './orders/orders.controller';
 
 @Module({
   imports: [
@@ -28,7 +30,8 @@ import { RestaurantsService } from './restaurants/restaurants.service';
     AuthController,
     RestaurantsController,
     MenuController,
+    OrdersController,
   ],
-  providers: [AppService, AuthService, RestaurantsService, MenuService],
+  providers: [AppService, AuthService, RestaurantsService, MenuService, OrderService],
 })
 export class AppModule {}
