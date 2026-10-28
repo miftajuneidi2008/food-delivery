@@ -23,7 +23,6 @@ export default function LoginScreen() {
 
     try {
       await login(email, password);
-      router.replace("/");
     } catch {
       Alert.alert("Login failed", "Invalid email or password");
     } finally {

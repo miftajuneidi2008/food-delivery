@@ -9,9 +9,10 @@ export default function Index() {
 
   if (!user) return <Redirect href="/login" />;
 
-  if (user.role === UserRole.CUSTOMER) return <Redirect href="/(customer)" />;
+  if (user.role === UserRole.CUSTOMER)
+    return <Redirect href="/(customer)/(home)" />;
   if (user.role === UserRole.RESTAURANT_OWNER)
-    return <Redirect href="/(owner)" />;
+    return <Redirect href="/(owner)/(index)" />;
   if (user.role === UserRole.DRIVER) return <Redirect href="/(driver)" />;
 
   return <Redirect href="/login" />;

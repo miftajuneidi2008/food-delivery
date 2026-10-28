@@ -23,7 +23,6 @@ export class OrdersService {
       .select()
       .from(schema.menuItems)
       .where(inArray(schema.menuItems.id, menuItemIds));
-
     // verify all menu item IDs were actually found in the DB
     // if any ID is invalid, menuItems.length < dto.items.length
     // without this check, find() returns undefined and total becomes NaN

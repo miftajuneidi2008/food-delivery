@@ -1,3 +1,8 @@
+import { useDebounce } from "@/hooks/use-debounce";
+import { api } from "@/lib/axios";
+import { RestaurantType } from "@food-delivery/types";
+import { useQuery } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -9,16 +14,11 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useQuery } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
-import { api } from "@/lib/axios";
-import { RestaurantType } from "@food-delivery/types";
-import { useDebounce } from "@/hooks/use-debounce";
 
 export default function CustomerHomeScreen() {
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 400); 
+  const debouncedSearch = useDebounce(search, 400);
 
   const { data: restaurants = [], isLoading } = useQuery<RestaurantType[]>({
     queryKey: ["restaurants", debouncedSearch],
@@ -60,7 +60,7 @@ export default function CustomerHomeScreen() {
             <Pressable
               style={styles.card}
               onPress={() =>
-                router.push(`/(customer)/(tabs)/(home)/restaurant/${item.id}`)
+                router.push(`/(customer)/(home)/restaurant/${item.id}`)
               }
             >
               {item.imageUrl ? (
