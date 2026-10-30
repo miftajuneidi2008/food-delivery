@@ -4,6 +4,7 @@ import { UserRole } from "@food-delivery/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import {StripeProvider} from "@stripe/stripe-react-native"
 import "../global.css";
 
 const queryClient = new QueryClient();
@@ -61,10 +62,14 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AnimatedSplashOverlay />
-        <RootNavigator />
-      </AuthProvider>
+      <StripeProvider
+        publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}
+      >
+        <AuthProvider>
+          <AnimatedSplashOverlay />
+          <RootNavigator />
+        </AuthProvider>
+      </StripeProvider>
     </QueryClientProvider>
   );
 }

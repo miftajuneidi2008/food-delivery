@@ -45,7 +45,7 @@ export default function CartScreen() {
       }),
     onSuccess: (res) => {
       clearCart();
-      router.push(`/(customer)/(home)/order/${res.data.id}`);
+      router.push(`/(customer)/order/${res.data.id}`);
     },
     onError: (e: any) => {
       Alert.alert(
