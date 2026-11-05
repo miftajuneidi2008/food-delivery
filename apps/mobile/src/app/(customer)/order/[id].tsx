@@ -1,23 +1,54 @@
+import { useOrderSocket } from "@/hooks/use-order-socket";
 import { api } from "@/lib/axios";
 import { Order } from "@food-delivery/types";
 import { useStripe } from "@stripe/stripe-react-native";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const STATUS_STEPS = [
+  { key: "CONFIRMED", label: "Order Confirmed", icon: "✅" },
+  { key: "PREPARING", label: "Being Prepared", icon: "👨‍🍳" },
+  { key: "READY", label: "Ready for Pickup", icon: "📦" },
+  { key: "PICKED_UP", label: "Driver Picked Up", icon: "🛵" },
+  { key: "DELIVERED", label: "Delivered", icon: "🎉" },
+];
+
+const STATUS_ORDER = [
+  "CONFIRMED",
+  "PREPARING",
+  "READY",
+  "PICKED_UP",
+  "DELIVERED",
+];
+
 export default function OrderConfirmationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const queryClient = useQueryClient();
+  const orderUpdate = useOrderSocket(id ?? null);
+
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [paymentLoading, setPaymentLoading] = useState(false);
+  useEffect(() => {
+    if (orderUpdate) {
+      // update React Query cache directly — no new HTTP request needed
+      // ['order', id] must match the queryKey in useQuery above
+      queryClient.setQueryData(["order", id], (old: unknown) => ({
+        ...(old as object), // keep existing fields (items, address, tot…
+        ...orderUpdate, // overwrite with pushed data (mainly status)
+      }));
+    }
+  }, [orderUpdate, id, queryClient]);
 
   const {
     data: order,
@@ -93,63 +124,116 @@ export default function OrderConfirmationScreen() {
     );
   }
 
+  const currentIndex = STATUS_ORDER.indexOf(order?.status ?? "");
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.content}>
-        <Text style={styles.emoji}>
-          {order?.status === "CONFIRMED" ? "✅" : "🎉"}
-        </Text>
-        <Text style={styles.title}>Order Placed!</Text>
-        <Text style={styles.subtitle}>Your order has been received</Text>
-
-        <View style={styles.card}>
-          <Text style={styles.label}>Order ID</Text>
-          <Text style={styles.value}>
-            {order?.id.slice(0, 8).toUpperCase()}
+      <ScrollView style={styles.content}>
+        <View style={styles.content}>
+          <Text style={styles.emoji}>
+            {order?.status === "CONFIRMED" ? "✅" : "🎉"}
           </Text>
+          <Text style={styles.title}>Order Placed!</Text>
+          <Text style={styles.subtitle}>Your order has been received</Text>
 
-          <Text style={styles.label}>Total</Text>
-          <Text style={styles.value}>${order?.totalAmount}</Text>
+          <View style={styles.card}>
+            <Text style={styles.label}>Order ID</Text>
+            <Text style={styles.value}>
+              {order?.id.slice(0, 8).toUpperCase()}
+            </Text>
 
-          <Text style={styles.label}>Delivery to</Text>
-          <Text style={styles.value}>{order?.deliveryAddress}</Text>
+            <Text style={styles.label}>Total</Text>
+            <Text style={styles.value}>${order?.totalAmount}</Text>
 
-          <Text style={styles.label}>Status</Text>
-          <Text
-            style={[
-              styles.statusBadge,
-              order?.status === "CONFIRMED" ? styles.confirmed : styles.pending,
-            ]}
-          >
-            {order?.status}
-          </Text>
-        </View>
+            <Text style={styles.label}>Delivery to</Text>
+            <Text style={styles.value}>{order?.deliveryAddress}</Text>
 
-        {order?.status === "PENDING" && (
+            <Text style={styles.label}>Status</Text>
+            <Text
+              style={[
+                styles.statusBadge,
+                order?.status === "CONFIRMED"
+                  ? styles.confirmed
+                  : styles.pending,
+              ]}
+            >
+              {order?.status}
+            </Text>
+          </View>
+
+          {order?.status === "PENDING" && (
+            <Pressable
+              style={styles.payButton}
+              onPress={() => {
+                void handlePayment();
+              }}
+              disabled={paymentLoading}
+            >
+              {paymentLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.payButtonText}>
+                  Pay ${order?.totalAmount}
+                </Text>
+              )}
+            </Pressable>
+          )}
+
+          {order?.status === "CANCELLED" ? (
+            <View style={styles.cancelledBox}>
+              <Text style={styles.cancelledText}>❌ Order Cancelled</Text>
+            </View>
+          ) : order?.status !== "PENDING" ? (
+            <View style={styles.tracker}>
+              <Text style={styles.trackerTitle}>Order Progress</Text>
+              {STATUS_STEPS.map((step, index) => {
+                const isCompleted = index <= currentIndex;
+                const isActive = index === currentIndex;
+                return (
+                  <View key={step.key} style={styles.step}>
+                    <View style={styles.stepLeft}>
+                      <View
+                        style={[
+                          styles.stepCircle,
+                          isCompleted && styles.stepCircleCompleted,
+                          isActive && styles.stepCircleActive,
+                        ]}
+                      >
+                        <Text style={styles.stepIcon}>
+                          {isCompleted ? step.icon : "○"}
+                        </Text>
+                      </View>
+                      {index < STATUS_STEPS.length - 1 && (
+                        <View
+                          style={[
+                            styles.stepLine,
+                            isCompleted && styles.stepLineCompleted,
+                          ]}
+                        />
+                      )}
+                    </View>
+                    <Text
+                      style={[
+                        styles.stepLabel,
+                        isActive && styles.stepLabelActive,
+                        isCompleted && styles.stepLabelCompleted,
+                      ]}
+                    >
+                      {step.label}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
           <Pressable
-            style={styles.payButton}
-            onPress={() => {
-              void handlePayment();
-            }}
-            disabled={paymentLoading}
+            style={styles.homeButton}
+            onPress={() => router.replace("/(customer)/(tabs)/(home)")}
           >
-            {paymentLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.payButtonText}>
-                Pay ${order?.totalAmount}
-              </Text>
-            )}
+            <Text style={styles.homeButtonText}>Back to Home</Text>
           </Pressable>
-        )}
-
-        <Pressable
-          style={styles.homeButton}
-          onPress={() => router.replace("/(customer)/(tabs)/(home)")}
-        >
-          <Text style={styles.homeButtonText}>Back to Home</Text>
-        </Pressable>
-      </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -165,9 +249,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   content: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
     padding: 24,
   },
   emoji: {
@@ -205,31 +286,12 @@ const styles = StyleSheet.create({
   statusBadge: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#FF6B35",
-  },
-  paymentNote: {
-    fontSize: 13,
-    color: "#999",
-    marginBottom: 24,
-    fontStyle: "italic",
   },
   confirmed: {
     color: "#16A34A",
   },
   pending: {
     color: "#FF6B35",
-  },
-  homeButton: {
-    backgroundColor: "#FF6B35",
-    borderRadius: 8,
-    padding: 16,
-    width: "100%",
-    alignItems: "center",
-  },
-  homeButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
   },
   payButton: {
     backgroundColor: "#FF6B35",
@@ -243,5 +305,98 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
+  },
+  homeButton: {
+    borderRadius: 8,
+    padding: 16,
+    width: "100%",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  homeButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+  },
+  trackerTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 16,
+    color: "#333",
+  },
+  cancelledBox: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: 12,
+    padding: 20,
+    alignItems: "center",
+    marginBottom: 24,
+    width: "100%",
+  },
+  cancelledText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#EF4444",
+  },
+  tracker: {
+    marginBottom: 24,
+    width: "100%",
+  },
+  step: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  stepLeft: {
+    alignItems: "center",
+  },
+  stepCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#f0f0f0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepCircleCompleted: {
+    backgroundColor: "#DCFCE7",
+  },
+  stepCircleActive: {
+    backgroundColor: "#FF6B35",
+  },
+  stepIcon: {
+    fontSize: 16,
+  },
+  stepLine: {
+    width: 2,
+    height: 32,
+    backgroundColor: "#f0f0f0",
+    marginVertical: 2,
+  },
+  stepLineCompleted: {
+    backgroundColor: "#22C55E",
+  },
+  stepLabel: {
+    fontSize: 15,
+    color: "#999",
+    paddingTop: 10,
+  },
+  stepLabelActive: {
+    color: "#FF6B35",
+    fontWeight: "700",
+  },
+  stepLabelCompleted: {
+    color: "#333",
+    fontWeight: "500",
+  },
+  map: {
+    width: "100%",
+    height: 220,
+    borderRadius: 16,
+    marginBottom: 24,
+    overflow: "hidden",
+  },
+  driverPin: {
+    fontSize: 28,
   },
 });

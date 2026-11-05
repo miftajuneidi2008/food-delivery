@@ -9,11 +9,15 @@ import {
 import { desc, eq, inArray, SQL } from 'drizzle-orm';
 import type { Database } from '../db/database';
 import * as schema from '../db/schema';
+import { OrdersGateway } from '../gateway/orders.gateway';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 @Injectable()
 export class OrdersService {
-  constructor(@Inject('DB') private readonly db: Database) {}
+  constructor(
+    private ordersGateway: OrdersGateway,
+    @Inject('DB') private readonly db: Database,
+  ) {}
 
   async create(customerId: string, dto: CreateOrderDto) {
     const menuItemIds = dto.items.map((i) => i.menuItemId);
@@ -166,6 +170,8 @@ export class OrdersService {
       .set({ status: newStatus, updatedAt: new Date() })
       .where(eq(schema.orders.id, orderId))
       .returning();
+
+    this.ordersGateway.emitOrderUpdate(updated);
 
     return updated;
   }

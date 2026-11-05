@@ -8,6 +8,7 @@ import { eq } from 'drizzle-orm';
 import Stripe from 'stripe';
 import type { Database } from '../db/database';
 import * as schema from '../db/schema';
+import { OrdersGateway } from '../gateway/orders.gateway';
 //import { OrdersGateway } from '../gateway/orders.gateway';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class PaymentsService {
   private stripe: InstanceType<typeof Stripe>;
 
   constructor(
+    private ordersGateway: OrdersGateway,
     @Inject('DB') private readonly db: Database,
     // private ordersGateway: OrdersGateway,
   ) {
@@ -91,9 +93,8 @@ export class PaymentsService {
         .set({ status: 'CONFIRMED', updatedAt: new Date() })
         .where(eq(schema.orders.id, order.id))
         .returning();
-      console.log(updated);
 
-      // this.ordersGateway.emitOrderUpdate(updated);
+      this.ordersGateway.emitOrderUpdate(updated);
     }
 
     return { received: true }; // always return 200 to Stripe
